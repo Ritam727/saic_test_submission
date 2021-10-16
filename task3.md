@@ -1,69 +1,120 @@
 # Task 3
 After installing docker, I was basically lost, I didn't know anything about how the program works. So all I had with me was our best friend **Google**.
 
-Since we had to host two *static websites*, so I decided to simply implement a workflow only with static websites. Since hosting works with a server, I had to find a way to use a server and host the websites on it using docker. So I first tested out with a basic **Hello World** html file and the httpd image from docker which uses apache web server.
+Since we had to host two *static websites*, so I decided to simply implement a workflow only with static websites. Since hosting works with a server, I had to find a way to use a server and host the websites on it using docker. So I first tested out with a basic **Hello World** html file and the apache2 image from docker which uses apache web server. This was a fairly easy task since we ran a single website on a single docker. But the main challenge here is to run both websites  from the same container.
 
-I used the following steps to run the websites mentioned to run the SAIC-Website:
-1. Forked and cloned the repositories in my local system:
-    
+So I did the following steps:
+1. Create a new directory and clone both the repositories in that directory:
+
+    `$ mkdir saic_test && cd saic_test/`
+
+    `$ git clone git@github.com:Ritam727/kamandprompt.github.io.git`
+
     `$ git clone git@github.com:Ritam727/SAIC-Website.git`
-2. Created a Dockerfile mentioning the required packages to use a webserver(in my case its httpd image from docker which uses apache):
+2. Create a Dockerfile and configure the commands and server to use:
 
-    `$ cd SAIC-Website/`
-    
     `$ nano Dockerfile`
 
-    Inside the editor I wrote the following lines:
+    Inside the editor, I wrote the following lines:
+
     ```
-    FROM httpd:2.4
-    COPY . /usr/local/apache2/htdocs/
+    FROM ubuntu/apache2:2.4-20.04_beta
+    COPY SAIC-Website/. /var/www/saic.example.com
+    COPY saic.example.com.conf /etc/apache2/sites-available/
+    RUN a2dissite 000-default.conf
+    RUN a2ensite saic.example.com
+    RUN echo '127.0.0.1 saic.example.com' >> /etc/hosts
+    COPY kamandprompt.github.io/. /var/www/kp.example.com
+    COPY kp.example.com.conf /etc/apache2/sites-available/
+    RUN a2ensite kp.example.com
+    RUN echo '127.0.0.1 kp.example.com' >> /etc/hosts
+    RUN service apache2 start
     ```
-    What this code does is simple, it installs the httpd package and copies the files from the working directory to the `/usr/local/apache2/htdocs` directory in server system.
-3. Then I ran created the image file using the `build` command of docker:
+3. Create the files mentioned in the Dockerfile and enter the following lines:
 
-    `$ sudo docker build -t <user-name>/<image-name>:[TAG] .`
+    `$ nano saic.example.com.conf`
 
-    For my case, I used the following command:
+    Inside the file enter the following lines and save the file:
+    
+    ```
+    <VirtualHost>
+        ServerName saic.example.com
+        DocumentRoot /var/www/saic.example.com
+    </VirtualHost>
+    ```
 
-    `$ sudo docker build -t zblaster/saic_website:latest .`
+    `$ nano kp.example.com.conf`
 
-    This creates a docker image with the name zblaster/saic_website and tags it latest.
-4. Then I created a container using the `run` command that uses the image we just created and hosts the site on the server:
+    Inside the editor, enter the following lines and save the file:
 
-    `$ sudo docker run -dit --name <container-name> -p [PORT_ON_LOCALHOST]:80 <user-name>/<image-name>:[TAG]`
+    ```
+    <VirtualHost>
+        ServerName kp.example.com
+        DocumentRoot /var/www/kp.example.com
+    </VirtualHost>
+    ```
+4. Change the file called etc/hosts in my **local machine**(this step is necessary):
 
-    For my case, the following command was used:
+    `$ sudo nano /etc/hosts`
 
-    `$ sudo docker run -dit --name saic_website -p 1234:80 zblaster/saic_website:latest`
+    Add the following lines to the end of the file:
 
-    This basically sets up the server and hosts the website on the server. In my case, the server would be hosted on `http://localhost:1234`.
-5. Then to publish the image, I used the `push` command of docker to push the repository to [Docker hub](https://hub.docker.com) on my repository:
+    ```
+    127.0.0.1       saic.example.com
+    127.0.0.1       kp.example.com
+    ```
 
-    `$ docker push <user-name>/<package-name>:[TAG]`
+    This change ensures that the above domains work in the local system.
+5. Then I used `build` command to build the *container*.
+    
+    `$ sudo docker build -t zblaster/saic_test:latest .`
 
-    In my case the command was:
+    This builds the image and makes it ready for publication. For running the image:
 
-    `$ docker push zblaster/saic_website:latest`
+    `$ sudo docker run -dit --name saic -p 80:80 zblaster/saic_test:latest`
 
-    This published the image file on the web and anyone who wishes to test the server can first install apache2 and start the process and then use the following command to clone the package to run the server:
-
-    `$ sudo docker run -dit --name <container-name> -p [PORT]:80 zblaster/saic_website:latest`
-
-The steps to run the Kamandprompt website were similar. The only changes were in the *package-name* in the commands and the port I used was `1235` instead of `1234`, since the former was already running in port `1234`. The package-name is kp_website.
+    This command runs the image on port 80 of the above mentioned domains.
 
 **Saic Website**
+![Saic Image](/images/task3_saic.png)
 
-![Saic_Website](/images/task3_saic.png)
+We can see that the SAIC website is up and running on `saic.example.com`
 
-**Kamandprompt Website**
-![Kp_Website](/images/task3_kp.png)
+**KamandPrompt Website**
+![KamandPrompt Image](/images/task3_kp.png)
+
+We can see that the KamandPrompt website is up and running on `kp.example.com`
+
+Then I published the image to [Docker Hub](https://hub.docker.com):
+
+`$ sudo docker push zblaster/saic_website:latest`
+
+So, if anybody on the internet wants to use it, they can run the docker and then make a few necessary changes to `/etc/hosts` file and they are good to go:
+
+`$ sudo docker run -dit --name <container-name> -p [PORT]:80 zblaster/saic_test:latest`
+
+`$ sudo nano /etc/hosts`
+
+Add the following lines, save the file and close the editor:
+
+```
+127.0.0.1       saic.example.com
+127.0.0.1       kp.example.com
+```
+
+Then the users can check the sites on `saic.example.com:<PORT>` and `kp.example.com:<PORT>`, where `<PORT>` has to be replaced by the port they specified in the command.
+
 
 ---
 ---
 
-Performing this task, I came to learn about what the **docker**  program does and how to use it. It is basically used for creating *Containers* to ship applications to test them out before publishing it. We can test out the look and feel of Operating Systems before deploying them with a kernel, or test out websites by hosting them locally. In this task we were to host two websites locally, which we can easily do within a few minutes if the website is ready. This helps us to test out how the website would look and function in a web server using the same application that we use in the *Container*. In our case its an apache server, which is one of the most commonly used web servers. I did not use that directly in the container, instead I used httpd, which is available as a docker image and uses apache to host the website.
 
-References used:
-1. Google
-2. [Docker Documentation](https://docs.docker.com)
-3. [httpd Documentation](https://hub.docker.com/_/httpd)
+# What I learnt
+After completing this challenge, I became a little familiar with docker and docker images, and how most of the static websites are hosted on the internet. Most of the websites run on a server and completing this task, I found myself familiar with how servers are installed and how they work.
+
+# Difficulties faced
+After I hosted a basic single website container with docker, I was stuck ( believe me it was for a long time :| ). I couldn't out a way to host multiple websites on the same container. Whenever I searched for something on *Google*, it gave me how to host them on the webservers themselves rather than on docker. So, I had to find out a workaround. I learnt how we set up the apache server for multiple websites using VirtualHost and then applied that indirectly in the docker image.
+
+# References used:
+1. A lot of Google searches
+2. [Docker documentation](https://docs.docker.com)
