@@ -105,7 +105,7 @@ Then the users can check the sites on `saic.example.com:<PORT>` and `kp.example.
 After completing this challenge, I became a little familiar with docker and docker images, and how most of the static websites are hosted on the internet. Most of the websites run on a server and completing this task, I found myself familiar with how servers are installed and how they work.
 
 # Difficulties faced
-After I hosted a basic single website container with docker, I was stuck ( believe me it was for a long time :| ). I couldn't out a way to host multiple websites on the same container. Whenever I searched for something on *Google*, it gave me how to host them on the webservers themselves rather than on docker. So, I had to find out a workaround. I learnt how we set up the apache server for multiple websites using VirtualHost and then applied that indirectly in the docker image.
+After I hosted a basic single website container with docker, I was stuck ( believe me it was for a long time :| ). I couldn't find out a way to host multiple websites on the same container. Whenever I searched for something on *Google*, it gave me how to host them on the webservers themselves rather than on docker. So, I had to find out a workaround. I learnt how we set up the apache server for multiple websites using VirtualHost and then applied that indirectly in the docker image.
 
 # References used:
 1. A lot of Google searches
