@@ -21,13 +21,10 @@ So I did the following steps:
     FROM ubuntu/apache2:2.4-20.04_beta
     COPY SAIC-Website/. /var/www/saic.example.com
     COPY saic.example.com.conf /etc/apache2/sites-available/
-    RUN a2dissite 000-default.conf
     RUN a2ensite saic.example.com
-    RUN echo '127.0.0.1 saic.example.com' >> /etc/hosts
     COPY kamandprompt.github.io/. /var/www/kp.example.com
     COPY kp.example.com.conf /etc/apache2/sites-available/
     RUN a2ensite kp.example.com
-    RUN echo '127.0.0.1 kp.example.com' >> /etc/hosts
     RUN service apache2 start
     ```
 3. Create the files mentioned in the Dockerfile and enter the following lines:
@@ -89,18 +86,13 @@ Then I published the image to [Docker Hub](https://hub.docker.com):
 
 `$ sudo docker push zblaster/saic_website:latest`
 
-So, if anybody on the internet wants to use it, they can run the docker and then make a few necessary changes to `/etc/hosts` file and they are good to go:
+So, if anybody on the internet wants to use it, they can run the docker and then run the script named `add_ip.sh` which can be found in this repo, and they are good to go:
 
 `$ sudo docker run -dit --name <container-name> -p [PORT]:80 zblaster/saic_test:latest`
 
-`$ sudo nano /etc/hosts`
+`$ sudo ./add_ip.sh`
 
-Add the following lines, save the file and close the editor:
-
-```
-127.0.0.1       saic.example.com
-127.0.0.1       kp.example.com
-```
+What this script does is quite simple, it maps the 127.0.0.1 ip address with two custom domains, namely saic.example.com and kp.example.com, so the user doesn't have to add these ip addresses manually after starting the container.
 
 Then the users can check the sites on `saic.example.com:<PORT>` and `kp.example.com:<PORT>`, where `<PORT>` has to be replaced by the port they specified in the command.
 
