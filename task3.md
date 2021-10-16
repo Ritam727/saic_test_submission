@@ -1,17 +1,38 @@
 # Task 3
 After installing docker, I was basically lost, I didn't know anything about how the program works. So all I had with me was our best friend **Google**.
 
-Since we had to host two *static websites*, so I decided to simply implement a workflow only with static websites. Since hosting works with a server, I had to find a way to use a server and host the websites on it using docker. So I first tested out with a basic **Hello World** html file and the apache2 image from docker which uses apache web server. This was a fairly easy task since we ran a single website on a single docker. But the main challenge here is to run both websites  from the same container.
+Since we had to host two *static websites*, so I decided to simply implement a workflow only with static websites. Since hosting works with a server, I had to find a way to use a server and host the websites on it using docker. So I first tested out with a basic **Hello World** html file and the apache2 image from docker which uses apache web server. This was a fairly easy task since we ran a single website on a single container. But the main challenge here wass to run both websites from the same container.
 
-So I did the following steps:
-1. Create a new directory and clone both the repositories in that directory:
-
-    `$ mkdir saic_test && cd saic_test/`
-
-    `$ git clone git@github.com:Ritam727/kamandprompt.github.io.git`
+So I searched for some workarounds. I found out that it is possible to set up virtual hosts with a webserver and use different ports on the same ip address for two different websites.I used ubuntu/apache2 image from docker to run the server. The process I followed is described in the following steps:
+1. Clone both the repositories in a common directory:
+    
+    `$ mkdir saic && cd saic/`
 
     `$ git clone git@github.com:Ritam727/SAIC-Website.git`
-2. Create a Dockerfile and configure the commands and server to use:
+
+    `$ git clone git@github.com:Ritam727/kamandprompt.github.io.git`
+2. Create a configuration file for the webserver, set up two ports for two websites:
+    
+    `$ nano saic_test.conf`
+
+    Inside the editor, I wrote the following lines, saved and quit the editor:
+
+    ```
+    <VirtualHost *:80>
+        ServerName localhost
+        DocumentRoot /var/www/saic_website
+    </VirtualHost>
+
+    Listen 81
+    <VirtualHost *:81>
+        ServerName localhost
+        DocumentRoot /var/www/kp_website
+        Redirect permanent /blog http://blog.pc.iitmandi.co.in
+    </VirtualHost>
+    ```
+
+    The `Listen 81` command is necessary to instantiate the port 81 and the `Redirect permanent /blog http://blog.pc.iitmandi.co.in` is necessary to redirect the link to the designated site.
+3. Create the Dockerfile:
 
     `$ nano Dockerfile`
 
@@ -19,83 +40,50 @@ So I did the following steps:
 
     ```
     FROM ubuntu/apache2:2.4-20.04_beta
-    COPY SAIC-Website/. /var/www/saic.example.com
-    COPY saic.example.com.conf /etc/apache2/sites-available/
-    RUN a2ensite saic.example.com
-    COPY kamandprompt.github.io/. /var/www/kp.example.com
-    COPY kp.example.com.conf /etc/apache2/sites-available/
-    RUN a2ensite kp.example.com
+    COPY SAIC-Website/. /var/www/saic_website
+    COPY kamandprompt.github.io/. /var/www/kp_website
+    COPY saic_test.conf /etc/apache2/sites-available/
+    RUN a2ensite saic_test
     RUN service apache2 start
     ```
-3. Create the files mentioned in the Dockerfile and enter the following lines:
 
-    `$ nano saic.example.com.conf`
-
-    Inside the file enter the following lines and save the file:
+    This file would be used to run the create the docker image.
+4. Build the docker image and test it locally:
     
-    ```
-    <VirtualHost>
-        ServerName saic.example.com
-        DocumentRoot /var/www/saic.example.com
-    </VirtualHost>
-    ```
-
-    `$ nano kp.example.com.conf`
-
-    Inside the editor, enter the following lines and save the file:
-
-    ```
-    <VirtualHost>
-        ServerName kp.example.com
-        DocumentRoot /var/www/kp.example.com
-    </VirtualHost>
-    ```
-4. Change the file called etc/hosts in my **local machine**(this step is necessary):
-
-    `$ sudo nano /etc/hosts`
-
-    Add the following lines to the end of the file:
-
-    ```
-    127.0.0.1       saic.example.com
-    127.0.0.1       kp.example.com
-    ```
-
-    This change ensures that the above domains work in the local system.
-5. Then I used `build` command to build the *container*.
+    The following command is used to generate an image for your user id in docker hub and use the Dockerfile created:
     
-    `$ sudo docker build -t zblaster/saic_test:latest .`
+    `$ sudo docker build -t <user-name>/<package-name>:[TAG] .`
 
-    This builds the image and makes it ready for publication. For running the image:
+    In my case, the command was:
+    
+    `$ sudo docker build -t zblaster/saic:latest .`
 
-    `$ sudo docker run -dit --name saic -p 80:80 zblaster/saic_test:latest`
+    Then, to run the image in a container, the following command is used:
 
-    This command runs the image on port 80 of the above mentioned domains.
+    `$ sudo docker run -dit <other-flags> <user-name>/<package-name>:[TAG]`
 
-**Saic Website**
-![Saic Image](/images/task3_saic.png)
+    In my case the following command was used:
 
-We can see that the SAIC website is up and running on `saic.example.com`
+    `$ sudo docker run -dit --name saic -p 8080:80 -p 8081:81 zblaster/saic:latest`
 
-**KamandPrompt Website**
-![KamandPrompt Image](/images/task3_kp.png)
+    This binds the port 8080 of localhost to 80 of the container and 8081 of localhost to 81 of container. So the SAIC website would be hosted on `localhost:8080` and the KamandPrompt website on `localhost:8081`.
 
-We can see that the KamandPrompt website is up and running on `kp.example.com`
+    ![Saic Website](/images/task3_saic.png)
+    We can see that the SAIC website is up and running on `localhost:8080`.
 
-Then I published the image to [Docker Hub](https://hub.docker.com):
+    ![KamandPrompt Website](/images/task3_kp.png)
+    We can see that the KamandPrompt website is up and running on `localhost:8081`.
+5. Publishing the docker image and commands to be used by other users if the they want to use the image:
+    
+    `$ sudo docker push zblaster/saic:latest`
 
-`$ sudo docker push zblaster/saic_website:latest`
+    This publishes the image to [Docker hub](https://hub.docker.com).
 
-So, if anybody on the internet wants to use it, they can run the docker and then run the script named `add_ip.sh` which can be found in this repo, and they are good to go:
+    For other users, they can run the image locally using the following command:
 
-`$ sudo docker run -dit --name <container-name> -p [PORT]:80 zblaster/saic_test:latest`
+    `$ sudo docker run -dit --name [container-name] -p [PORT1]:80 -p [PORT2]:81 zblaster/saic:latest`
 
-`$ sudo ./add_ip.sh`
-
-What this script does is quite simple, it maps the 127.0.0.1 ip address with two custom domains, namely saic.example.com and kp.example.com, so the user doesn't have to add these ip addresses manually after starting the container.
-
-Then the users can check the sites on `saic.example.com:<PORT>` and `kp.example.com:<PORT>`, where `<PORT>` has to be replaced by the port they specified in the command.
-
+    Replace *container-name* with whatever they like, *PORT1* and *PORT2* with whichever port they find suitable. Then the SAIC and KamandPrompt websites would be hosted on `localhost:PORT1` and `localhost:PORT2` respectively.
 
 ---
 ---
