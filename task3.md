@@ -84,6 +84,7 @@ So I searched for some workarounds. I found out that it is possible to set up vi
     `$ sudo docker run -dit --name [container-name] -p [PORT1]:80 -p [PORT2]:81 zblaster/saic:latest`
 
     Replace *container-name* with whatever they like, *PORT1* and *PORT2* with whichever port they find suitable. Then the SAIC and KamandPrompt websites would be hosted on `localhost:PORT1` and `localhost:PORT2` respectively.
+[Docker Image link on docker hub](https://hub.docker.com/repository/docker/zblaster/saic)
 
 ---
 ---
