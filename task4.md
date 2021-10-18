@@ -38,6 +38,8 @@ Usage:
 
     This compares and pulls changes from [remote-name]/[branch-name].
 
+I couldn't solve the Bonus task :').
+
 ---
 ---
 
